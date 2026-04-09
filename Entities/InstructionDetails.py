@@ -276,47 +276,52 @@ class InstructionDetails:
 
     # Handlers to set specifics properties
     def setRd(self):
-        self.specificProperties['Rd'] = self.binInstruction[20:25]
+        self.specificProperties['Rd'] = f'{self.binInstruction[20:25]} ({int(self.binInstruction[20:25], 2)})'
 
     def setRs1(self):
-        self.specificProperties['Rs1'] = self.binInstruction[12:17]
+        self.specificProperties['Rs1'] = f'{self.binInstruction[12:17]} ({int(self.binInstruction[12:17], 2)})'
 
     def setRs2(self):
-        self.specificProperties['Rs2'] = self.binInstruction[7:12]
+        self.specificProperties['Rs2'] = f'{self.binInstruction[7:12]} ({int(self.binInstruction[7:12], 2)})'
 
     def setCsr(self):
-        self.specificProperties['Csr'] = self.binInstruction[0:12]
+        self.specificProperties['Csr'] = f'{self.binInstruction[0:12]} ({int(self.binInstruction[0:12], 2)})'
 
     def setSpecificPropertiesForUpperImmediate(self):
-        self.specificProperties['Imm'] = self.binInstruction[0:20]
+        self.specificProperties['Imm'] = f'{self.binInstruction[0:20]} ({int(self.binInstruction[0:20], 2)})'
         self.setRd()
 
     def setSpecificPropertiesForJump(self):
-        self.specificProperties['Imm'] = (f'{self.binInstruction[11]}'
+        imm = (f'{self.binInstruction[11]}'
             f'{self.binInstruction[21:32]}'
             f'{self.binInstruction[20]}'
             f'{self.binInstruction[12:20]}')
+        self.specificProperties['Imm'] = f'{imm} ({int(imm, 2)})'
         self.setRd()
 
     def setSpecificPropertiesForInstructionsWithTwelveBitsImmediate(self):
-        self.specificProperties['Imm'] = self.binInstruction[20:]
+        self.specificProperties['Imm'] = f'{self.binInstruction[20:]} ({int(self.binInstruction[20:], 2)})'
         self.setRs1()
         self.setRd()
 
     def setSpecificPropertiesForBranch(self):
-        self.specificProperties['Imm 1'] = f'{self.binInstruction[19]}{self.binInstruction[21:27]}'
+        imm1 = f'{self.binInstruction[19]}{self.binInstruction[21:27]}'
+        self.specificProperties['Imm 1'] = f'{imm1} ({int(imm1, 2)})'
         self.setRs2()
         self.setRs1()
-        self.specificProperties['Imm 2'] = f'{self.binInstruction[27:31]}{self.binInstruction[20]}'
+        imm2 = f'{self.binInstruction[27:31]}{self.binInstruction[20]}'
+        self.specificProperties['Imm 2'] = f'{imm2} ({int(imm2, 2)})'
 
     def setSpecificPropertiesForStore(self):
-        self.specificProperties['Imm 1'] = self.binInstruction[20:27]
+        imm1 = self.binInstruction[20:27]
+        self.specificProperties['Imm 1'] = f'{imm1} ({int(imm1, 2)})'
         self.setRs2()
         self.setRs1()
-        self.specificProperties['Imm 2'] = self.binInstruction[27:]
+        imm2 = self.binInstruction[27:]
+        self.specificProperties['Imm 2'] = f'{imm2} ({int(imm2, 2)})'
 
     def setSpecificPropertiesForImmediatesWithShamt(self):
-        self.specificProperties['Shamt'] = self.binInstruction[7:12]
+        self.specificProperties['Shamt'] = f'{self.binInstruction[7:12]} ({int(self.binInstruction[7:12], 2)})'
         self.setRs1()
         self.setRd()
 
@@ -326,8 +331,8 @@ class InstructionDetails:
         self.setRd()
 
     def setSpecificPropertiesForIFence(self):
-        self.specificProperties['Pred'] = self.binInstruction[4:8]
-        self.specificProperties['Succ'] = self.binInstruction[8:12]
+        self.specificProperties['Pred'] = f'{self.binInstruction[4:8]} ({int(self.binInstruction[4:8], 2)})'
+        self.specificProperties['Succ'] = f'{self.binInstruction[8:12]} ({int(self.binInstruction[8:12], 2)})'
 
     def setSpecificPropertiesForImmediateWithCsrAndRs1(self):
         self.setCsr()
@@ -336,5 +341,5 @@ class InstructionDetails:
 
     def setSpecificPropertiesForImmediateWithCsrAndZimm(self):
         self.setCsr()
-        self.specificProperties['Zimm'] = self.binInstruction[12:17]
+        self.specificProperties['Zimm'] = f'{self.binInstruction[12:17]} ({int(self.binInstruction[12:17], 2)})'
         self.setRd()
