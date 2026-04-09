@@ -1,5 +1,5 @@
-from Enums.InstructionType import InstructionType
-from Enums.OpCode import OpCode
+from Domain.Enums.InstructionType import InstructionType
+from Domain.Enums.OpCode import OpCode
 
 def defineTypeForInstruction(opCode: OpCode, binInstruction: str) -> InstructionType:
     match opCode:

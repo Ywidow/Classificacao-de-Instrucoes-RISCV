@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-from Entities.InstructionDetails import InstructionDetails
+from Domain.Entities.InstructionDetails import InstructionDetails
 
 class InstructionViewer(tk.Tk):
     def __init__(self, instructions: list[InstructionDetails]):
@@ -10,12 +10,7 @@ class InstructionViewer(tk.Tk):
         self.geometry("1100x700")
         self.configure(bg="#f4f6f8")
 
-        tk.Label(
-            self,
-            text="Instruções",
-            font=("Segoe UI", 18, "bold"),
-            bg="#f4f6f8"
-        ).pack(pady=10)
+        (tk.Label(self, text="Instruções", font=("Segoe UI", 18, "bold"), bg="#f4f6f8").pack(pady=10))
 
         container = tk.Frame(self, bg="#f4f6f8")
         container.pack(fill="both", expand=True)
@@ -25,10 +20,7 @@ class InstructionViewer(tk.Tk):
 
         scrollable_frame = tk.Frame(canvas, bg="#f4f6f8")
 
-        scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
 
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)

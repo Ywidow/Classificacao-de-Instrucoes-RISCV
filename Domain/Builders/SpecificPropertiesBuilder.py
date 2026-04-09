@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from Enums.InstructionType import InstructionType
-from Enums.OpCode import OpCode
+from Domain.Enums.InstructionType import InstructionType
+from Domain.Enums.OpCode import OpCode
 
 @dataclass
 class SpecificPropertiesBuilder:

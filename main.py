@@ -1,5 +1,5 @@
-from Entities.InstructionDetails import InstructionDetails
-from Presentation.InstructionViewer import InstructionViewer
+from Domain.Entities.InstructionDetails import InstructionDetails
+from Presentation.Models.InstructionViewer import InstructionViewer
 
 def readEachLineFromFile(filename: str) -> list[str]:
     lines: list[str] = []
