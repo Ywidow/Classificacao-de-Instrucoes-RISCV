@@ -1,4 +1,5 @@
 from Entities.InstructionDetails import InstructionDetails
+from Presentation.InstructionViewer import InstructionViewer
 
 def readEachLineFromFile(filename: str) -> list[str]:
     lines: list[str] = []
@@ -18,5 +19,8 @@ instructionDetails: list[InstructionDetails] = []
 for hexInstruction in hexInstructions:
     instructionDetails.append(InstructionDetails(hexInstruction))
 
-for instructions in instructionDetails:
-    instructions.print()
+#for inst in instructionDetails:
+#    inst.print()
+
+ui = InstructionViewer(instructionDetails)
+ui.mainloop()
