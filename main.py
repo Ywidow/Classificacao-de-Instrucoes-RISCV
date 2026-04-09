@@ -1,3 +1,8 @@
+# Trabalho M1 sobre identificação de instruções
+#Professor: Thiago Felski
+#Matéria: Organização de Computadores
+#Desenvolvedores: Guilherme Thomy, Ismael Junior, Eduardo Leopoldo
+
 from Domain.Entities.InstructionDetails import InstructionDetails
 from Presentation.Models.InstructionViewer import InstructionViewer
 
