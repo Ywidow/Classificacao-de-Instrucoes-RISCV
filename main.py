@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Trabalho M1 sobre identificação de instruções
 # Professor: Thiago Felski
 # Matéria: Organização de Computadores

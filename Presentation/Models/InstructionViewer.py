@@ -9,8 +9,24 @@ class InstructionViewer(tk.Tk):
         self.title("Visualizador de Instruções RISC-V")
         self.geometry("1100x700")
         self.configure(bg="#f4f6f8")
+        self._instructions = instructions
 
-        (tk.Label(self, text="Instruções", font=("Segoe UI", 18, "bold"), bg="#f4f6f8").pack(pady=10))
+        header_frame = tk.Frame(self, bg="#f4f6f8")
+        header_frame.pack(fill="x", pady=(10, 0))
+
+        tk.Label(
+            header_frame, text="Instruções RISC-V (M1)", font=("Segoe UI", 18, "bold"), bg="#f4f6f8"
+        ).pack(side="left", padx=15)
+
+        tk.Button(
+            header_frame,
+            text="Análise de Hazards (M2)",
+            font=("Segoe UI", 10, "bold"),
+            bg="#3b5bdb", fg="white",
+            activebackground="#2f4ac5", activeforeground="white",
+            relief="flat", padx=12, pady=4,
+            command=self._open_pipeline_viewer,
+        ).pack(side="right", padx=15)
 
         container = tk.Frame(self, bg="#f4f6f8")
         container.pack(fill="both", expand=True)
@@ -94,6 +110,10 @@ class InstructionViewer(tk.Tk):
             ).grid(row=0, column=0)
 
         return card
+
+    def _open_pipeline_viewer(self):
+        from Presentation.Models.PipelineViewer import PipelineViewer
+        PipelineViewer(self, self._instructions)
 
     def add_field(self, parent, label, value, row):
         tk.Label(
