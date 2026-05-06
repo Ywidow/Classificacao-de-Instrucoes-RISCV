@@ -10,11 +10,13 @@ from Domain.Services.HazardAnalyzer import (
     insert_nops_no_forwarding,
     insert_nops_with_forwarding,
     insert_nops_control_hazard,
+    insert_nops_control_hazard_with_forwarding,
     insert_nops_integrated_no_forwarding,
     insert_nops_integrated_with_forwarding,
     detect_data_hazards_no_forwarding,
     detect_data_hazards_with_forwarding,
     detect_control_hazards,
+    detect_control_hazards_with_forwarding,
 )
 
 _TAB_INFO = [
@@ -22,7 +24,7 @@ _TAB_INFO = [
     ("Dados s/ Fwd",        insert_nops_no_forwarding),
     ("Dados c/ Fwd",        insert_nops_with_forwarding),
     ("Controle s/ Fwd",     insert_nops_control_hazard),
-    ("Controle c/ Fwd",     insert_nops_control_hazard),
+    ("Controle c/ Fwd",     insert_nops_control_hazard_with_forwarding),
     ("Integrado s/ Fwd",    insert_nops_integrated_no_forwarding),
     ("Integrado c/ Fwd",    insert_nops_integrated_with_forwarding),
 ]
@@ -39,40 +41,41 @@ _DEMO_COMMENTS = {
 }
 
 _DESCRIPTIONS = {
-    "Original": "Sequência original sem nenhuma modificação.",
+    "Original": "Sequência original, sem nenhuma modificação.",
     "Dados s/ Fwd": (
-        "Conflito de dados resolvido sem forwarding.\n"
-        "Sem forwarding, o valor só fica disponível no final do WB (ciclo 5 da instrução escritora). "
-        "O leitor precisa esperar no ID, então inserimos NOPs até a distância entre escrita e leitura ser de no mínimo 4 instruções "
-        "(dist=1 → 3 NOPs, dist=2 → 2 NOPs, dist=3 → 1 NOP)."
+        "Conflito de dados — sem forwarding.\n"
+        "Sem forwarding, o valor escrito num registrador só fica disponível depois do WB (5º estágio). "
+        "Por isso, a instrução leitora precisa esperar: dist=1 → 3 NOPs | dist=2 → 2 NOPs | dist=3 → 1 NOP."
     ),
     "Dados c/ Fwd": (
-        "Conflito de dados resolvido com forwarding (EX→EX e MEM→EX).\n"
-        "O forwarding entrega o resultado direto entre estágios do pipeline, eliminando a maioria dos stalls. "
-        "O único caso que ainda precisa de NOP é o load-use: lw carrega da memória no MEM (ciclo 4), "
-        "mas a instrução seguinte já precisa do valor no EX (ciclo 3) — 1 ciclo de diferença, então 1 NOP é obrigatório."
+        "Conflito de dados — com forwarding (EX→EX e MEM→EX).\n"
+        "Com forwarding, o resultado é repassado direto entre os estágios e a maioria dos conflitos desaparece. "
+        "O único caso que ainda precisa de NOP é o load-use: o lw só tem o dado no MEM, "
+        "que chega 1 ciclo depois do que o próximo EX precisa — então 1 NOP é inevitável."
     ),
     "Controle s/ Fwd": (
-        "Conflito de controle sem forwarding de dados.\n"
-        "O resultado do desvio (beq, bne...) é calculado no EX (ciclo 3 da instrução de desvio). "
-        "Até lá, 2 instruções já foram buscadas e decodificadas — e precisam ser descartadas. "
-        "A solução é inserir 2 NOPs logo após o desvio para dar tempo ao pipeline resolver o endereço."
+        "Conflito de controle — sem forwarding de dados.\n"
+        "O endereço de destino do branch só é conhecido no EX (ciclo 3). Enquanto isso, "
+        "2 instruções já entraram no pipeline e precisam ser descartadas. "
+        "A solução é inserir 2 NOPs depois de cada branch ou jal."
     ),
     "Controle c/ Fwd": (
-        "Conflito de controle com forwarding de dados.\n"
-        "O forwarding de dados não tem efeito sobre conflitos de controle: o problema aqui não é a disponibilidade "
-        "de um registrador, mas sim o atraso para saber qual instrução executar depois do desvio. "
-        "Por isso a solução é a mesma: 2 NOPs após o desvio."
+        "Conflito de controle — com forwarding de dados.\n"
+        "Forwarding não resolve conflito de controle: o problema não é um registrador atrasado, "
+        "é não saber para onde o programa vai depois do desvio. "
+        "A solução é a mesma: 2 NOPs após cada branch ou jal."
     ),
     "Integrado s/ Fwd": (
-        "Solução integrada sem forwarding: trata conflitos de dados e de controle ao mesmo tempo.\n"
-        "Para dados: até 3 NOPs por hazard RAW. Para controle: 2 NOPs após cada desvio/salto. "
-        "Feito em uma passagem só, com recálculo automático dos offsets dos desvios."
+        "Solução integrada — sem forwarding.\n"
+        "Resolve os dois tipos de conflito juntos numa única passagem: "
+        "até 3 NOPs para conflitos de dados e 2 NOPs após cada desvio para conflitos de controle. "
+        "Os endereços dos desvios são recalculados automaticamente."
     ),
     "Integrado c/ Fwd": (
-        "Solução integrada com forwarding: trata load-use (1 NOP) e conflitos de controle (2 NOPs após desvio).\n"
-        "Os demais conflitos RAW são resolvidos por forwarding sem precisar de NOPs. "
-        "Offsets dos desvios são recalculados automaticamente."
+        "Solução integrada — com forwarding.\n"
+        "Com forwarding, só o load-use ainda precisa de NOP (1 NOP). "
+        "Os conflitos de controle continuam precisando de 2 NOPs após cada desvio. "
+        "Os endereços dos desvios são recalculados automaticamente."
     ),
 }
 
@@ -134,25 +137,32 @@ class PipelineViewer(tk.Toplevel):
         """Aba que exibe os hazards detectados (itens 1a, 1b, 2a, 2b da atividade)."""
         sections = [
             (
-                "Conflitos de Dados — Sem Forwarding",
+                "1a. Conflitos de Dados — Sem Forwarding",
                 "#fff3cd",
                 detect_data_hazards_no_forwarding(instructions),
                 "Hazard RAW detectado: uma instrução lê um registrador que ainda não foi escrito (WB não concluído).\n"
                 "dist=1 → 3 NOPs necessários  |  dist=2 → 2 NOPs  |  dist=3 → 1 NOP",
             ),
             (
-                "Conflitos de Dados — Com Forwarding",
+                "1b. Conflitos de Dados — Com Forwarding",
                 "#d4edda",
                 detect_data_hazards_with_forwarding(instructions),
-                "Com forwarding, apenas o hazard load-use continua exigindo NOP.\n"
+                "Com forwarding (EX→EX e MEM→EX), apenas o hazard load-use continua exigindo NOP.\n"
                 "Ocorre quando um lw é seguido diretamente por uma instrução que usa o registrador carregado.",
             ),
             (
-                "Conflitos de Controle",
+                "2a. Conflitos de Controle — Sem Forwarding",
                 "#cce5ff",
                 detect_control_hazards(instructions),
-                "Toda instrução de desvio ou salto causa conflito de controle.\n"
+                "Toda instrução de desvio (beq, bne...) ou salto (jal) causa conflito de controle.\n"
                 "O endereço de destino só é conhecido no final do EX, e 2 instruções já entraram no pipeline — por isso 2 NOPs.",
+            ),
+            (
+                "2b. Conflitos de Controle — Com Forwarding",
+                "#e2d9f3",
+                detect_control_hazards_with_forwarding(instructions),
+                "Forwarding de dados NÃO elimina conflitos de controle — o problema é o atraso para saber o endereço do desvio.\n"
+                "A detecção é idêntica ao caso sem forwarding: 2 NOPs em todo desvio/salto.",
             ),
         ]
 

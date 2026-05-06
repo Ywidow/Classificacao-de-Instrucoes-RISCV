@@ -14,26 +14,26 @@ class InstructionDetails:
     specificProperties: dict[str, str]
 
     def __init__(self, hexInstruction: str):
-        # Recebe o hex da instrução e já faz toda a decodificação automaticamente
+        # Recebe o hex e já faz toda a decodificação em sequência
         self.hexInstruction = hexInstruction
-        self.binInstruction = self.setBinInstruction(hexInstruction)  # converte para binário
-        self.opCode = self.setOpCode()                                 # extrai os 7 bits do opcode
-        self.type = defineTypeForInstruction(self.opCode, self.binInstruction)  # identifica o tipo (add, lw, beq...)
+        self.binInstruction = self.setBinInstruction(hexInstruction)  # hex → binário de 32 bits
+        self.opCode = self.setOpCode()                                 # pega os 7 bits do opcode
+        self.type = defineTypeForInstruction(self.opCode, self.binInstruction)  # identifica a instrução (add, lw, beq...)
         self.specificProperties = (
             SpecificPropertiesBuilder(self.type, self.opCode, self.binInstruction).buildSpecificProperties())  # extrai rd, rs1, rs2, imm...
 
     @staticmethod
     def setBinInstruction(hexInstruction: str) -> str:
-        # Converte o hex de 8 dígitos para uma string de 32 bits (ex: "0x00000013" → "00000000000000000000000000010011")
+        # Converte os 8 dígitos hex para uma string de 32 bits
         return format(int(hexInstruction, 16), "032b")
 
     def setOpCode(self) -> OpCode:
-        # Os 7 bits menos significativos da instrução RISC-V são o opcode (bits 6:0)
-        # Na string binária de 32 bits com MSB primeiro, isso corresponde aos últimos 7 caracteres
+        # No RISC-V, os 7 bits menos significativos são sempre o opcode
+        # Como a string binária começa pelo MSB, o opcode fica nos últimos 7 caracteres
         return OpCode(self.binInstruction[-7:])
 
     def print(self):
-        # Imprime no console todas as informações da instrução (usado para debug)
+        # Imprime tudo sobre a instrução — útil para debug
         print(f'Instrução em Hexadecimal: {self.hexInstruction}'
             f'\nInstrução em Binário: {self.binInstruction}'
             f'\nOpCode: {self.opCode.value}'
@@ -42,7 +42,7 @@ class InstructionDetails:
             f'\n')
 
     def printSpecificProperties(self) -> str:
-        # Formata os campos específicos (rd, rs1, imm...) como string para impressão
+        # Formata os campos da instrução (rd, rs1, imm...) para impressão
         text = ''
         for value in self.specificProperties:
             text += f'\n{value}: {self.specificProperties[value]}'

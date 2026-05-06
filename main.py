@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-# Trabalho M1/M2 sobre identificação de instruções e análise de hazards
-# Professor: Thiago Felski
+# Trabalho M1/M2 - Identificação de Instruções RISC-V e Análise de Hazards no Pipeline
 # Matéria: Organização de Computadores
-# Desenvolvedores: Guilherme Thomy, Ismael Junior, Eduardo Leopoldo
+# Professor: Thiago Felski
+# Grupo: Guilherme Thomy, Ismael Junior, Eduardo Leopoldo
 
 import tkinter as tk
 from tkinter import filedialog
@@ -12,9 +12,11 @@ from Domain.Services.HazardAnalyzer import (
     detect_data_hazards_no_forwarding,
     detect_data_hazards_with_forwarding,
     detect_control_hazards,
+    detect_control_hazards_with_forwarding,
     insert_nops_no_forwarding,
     insert_nops_with_forwarding,
     insert_nops_control_hazard,
+    insert_nops_control_hazard_with_forwarding,
     insert_nops_integrated_no_forwarding,
     insert_nops_integrated_with_forwarding,
     write_rows_to_file,
@@ -23,16 +25,29 @@ from Presentation.Models.InstructionViewer import InstructionViewer
 
 
 def readEachLineFromFile(filename: str) -> list[str]:
+    # Lê o arquivo linha por linha e converte tudo para hex de 8 dígitos.
+    # Suporta arquivos hex (dump do RARS) e arquivos binários de 32 bits.
     lines: list[str] = []
     with open(filename, "r", encoding="utf-8") as file:
-        for line in file:
+        for lineno, line in enumerate(file, start=1):
             stripped = line.strip()
-            if not stripped:
+            # Ignora linhas vazias e comentários
+            if not stripped or stripped.startswith("#") or stripped.startswith("//"):
                 continue
-            if len(stripped) == 8:
-                lines.append(stripped)
-                continue
-            lines.append(f"{int(stripped, 2):08x}")
+            token = stripped.split()[0].lower()
+            # Remove o prefixo 0x ou 0b se o arquivo tiver
+            if token.startswith("0x"):
+                token = token[2:]
+            elif token.startswith("0b"):
+                token = token[2:]
+            try:
+                if len(token) == 8 and all(c in "0123456789abcdef" for c in token):
+                    lines.append(token)
+                else:
+                    # Se não é hex de 8 dígitos, trata como binário de 32 bits
+                    lines.append(f"{int(token, 2):08x}")
+            except ValueError:
+                print(f"  [Aviso] Linha {lineno} ignorada (formato invalido): '{stripped}'")
     return lines
 
 
@@ -79,20 +94,29 @@ def main():
     else:
         print("  Nenhum conflito load-use detectado.")
 
-    print("\n--- Conflitos de controle ---")
-    controle = detect_control_hazards(instructionDetails)
-    if controle:
-        for h in controle:
+    print("\n--- Conflitos de controle (sem forwarding) ---")
+    controle_sf = detect_control_hazards(instructionDetails)
+    if controle_sf:
+        for h in controle_sf:
             print(f"  {h.description}")
+    else:
+        print("  Nenhum conflito de controle detectado.")
+
+    print("\n--- Conflitos de controle (com forwarding) ---")
+    controle_cf = detect_control_hazards_with_forwarding(instructionDetails)
+    if controle_cf:
+        for h in controle_cf:
+            print(f"  {h.description}")
+        print("  (Forwarding de dados nao elimina conflitos de controle — resultado identico ao sem forwarding.)")
     else:
         print("  Nenhum conflito de controle detectado.")
 
     # Geracao de arquivos e sobrecusto
     tecnicas = [
-        ("dados_sem_forwarding",     "Dados s/ Forwarding",   insert_nops_no_forwarding(instructionDetails)),
-        ("dados_com_forwarding",     "Dados c/ Forwarding",   insert_nops_with_forwarding(instructionDetails)),
-        ("controle_sem_forwarding",  "Controle s/ Forwarding",insert_nops_control_hazard(instructionDetails)),
-        ("controle_com_forwarding",  "Controle c/ Forwarding",insert_nops_control_hazard(instructionDetails)),
+        ("dados_sem_forwarding",     "Dados s/ Forwarding",    insert_nops_no_forwarding(instructionDetails)),
+        ("dados_com_forwarding",     "Dados c/ Forwarding",    insert_nops_with_forwarding(instructionDetails)),
+        ("controle_sem_forwarding",  "Controle s/ Forwarding", insert_nops_control_hazard(instructionDetails)),
+        ("controle_com_forwarding",  "Controle c/ Forwarding", insert_nops_control_hazard_with_forwarding(instructionDetails)),
         ("integrado_sem_forwarding", "Integrado s/ Forwarding",insert_nops_integrated_no_forwarding(instructionDetails)),
         ("integrado_com_forwarding", "Integrado c/ Forwarding",insert_nops_integrated_with_forwarding(instructionDetails)),
     ]
