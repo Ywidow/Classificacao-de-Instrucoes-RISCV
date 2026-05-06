@@ -2,6 +2,9 @@ from Domain.Enums.InstructionType import InstructionType
 from Domain.Enums.OpCode import OpCode
 
 def defineTypeForInstruction(opCode: OpCode, binInstruction: str) -> InstructionType:
+    # Com o opcode em mãos, descobre qual instrução é.
+    # Alguns opcodes cobrem várias instruções (ex: o opcode B-type serve pra beq, bne, blt...),
+    # então nesses casos usa o funct3 para diferenciar.
     match opCode:
         case OpCode.U0110111:
             return InstructionType.ULUI
@@ -30,6 +33,7 @@ def defineTypeForInstruction(opCode: OpCode, binInstruction: str) -> Instruction
                 f"Não foi possível definir uma instrução com opCode = {opCode} e binInstruction = {binInstruction}")
 
 def handleTypeWhenOpCodeIsB1100011(binInstruction) -> InstructionType:
+    # O funct3 (bits 17:20 na string) diz qual tipo de branch é (beq, bne, blt...)
     identifier = binInstruction[17:20]
 
     match identifier:
@@ -49,6 +53,7 @@ def handleTypeWhenOpCodeIsB1100011(binInstruction) -> InstructionType:
             raise Exception(f"B1100011 identifier = {identifier} não é válido")
 
 def handleTypeWhenOpCodeIsI0000011(binInstruction) -> InstructionType:
+    # O funct3 diferencia qual load é: lb, lh, lw, lbu ou lhu
     identifier = binInstruction[17:20]
 
     match identifier:
@@ -66,6 +71,7 @@ def handleTypeWhenOpCodeIsI0000011(binInstruction) -> InstructionType:
             raise Exception(f"I0000011 identifier = {identifier} não é válido")
 
 def handleTypeWhenOpCodeIsS0100011(binInstruction) -> InstructionType:
+    # O funct3 diferencia sb, sh e sw
     identifier = binInstruction[17:20]
 
     match identifier:
@@ -79,6 +85,8 @@ def handleTypeWhenOpCodeIsS0100011(binInstruction) -> InstructionType:
             raise Exception(f"S0100011 identifier = {identifier} não é válido")
 
 def handleTypeWhenOpCodeIsI0010011(binInstruction) -> InstructionType:
+    # Diferencia as instruções imediatas pelo funct3.
+    # Para srli/srai o funct3 é igual (101), então usa o funct7 para saber qual é.
     identifier = binInstruction[17:20]
 
     match identifier:
@@ -105,6 +113,8 @@ def handleTypeWhenOpCodeIsI0010011(binInstruction) -> InstructionType:
             raise Exception(f"I0010011 identifier = {identifier} não é válido")
 
 def handleTypeWhenOpCodeIsR0110011(binInstruction) -> InstructionType:
+    # Diferencia as instruções tipo R pelo funct3.
+    # Para add/sub e srl/sra onde o funct3 é igual, usa o funct7 para distinguir.
     identifier = binInstruction[17:20]
 
     match identifier:
@@ -134,6 +144,7 @@ def handleTypeWhenOpCodeIsR0110011(binInstruction) -> InstructionType:
             raise Exception(f"R0110011 identifier = {identifier} não é válido")
 
 def handleTypeWhenOpCodeIsI0001111(binInstruction) -> InstructionType:
+    # Diferencia fence de fence.i pelo funct3
     identifier = binInstruction[17:20]
 
     match identifier:
@@ -145,6 +156,8 @@ def handleTypeWhenOpCodeIsI0001111(binInstruction) -> InstructionType:
             raise Exception(f"I0001111 identifier = {identifier} não é válido")
 
 def handleTypeWhenOpCodeIsI1110011(binInstruction) -> InstructionType:
+    # Diferencia as instruções do sistema pelo funct3.
+    # Para ecall e ebreak o funct3 é 000, então usa os bits do imediato para separar.
     identifier = binInstruction[17:20]
 
     match identifier:
